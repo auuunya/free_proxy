@@ -17,7 +17,7 @@ import (
 
 func TestParseLineProxyList(t *testing.T) {
 	input := "1.1.1.1:80\n2.2.2.2:8080\ninvalid\n"
-	got := parseLineProxyList(input, "HTTP", "待检测")
+	got := parseLineProxyList(input, "HTTP", "Unchecked")
 	if len(got) != 2 {
 		t.Fatalf("expected 2 proxies, got %d", len(got))
 	}
@@ -39,7 +39,7 @@ func TestParseFreeProxyList(t *testing.T) {
 	if len(got) != 1 {
 		t.Fatalf("expected 1 proxy, got %d", len(got))
 	}
-	if got[0].Type != "SOCKS5" || got[0].HTTPS != "支持" {
+	if got[0].Type != "SOCKS5" || got[0].HTTPS != "Supported" {
 		t.Fatalf("unexpected parsed proxy: %+v", got[0])
 	}
 }
@@ -101,7 +101,7 @@ func TestMergeRequestMetadata(t *testing.T) {
 			IP:    "1.2.3.4",
 			Port:  "8080",
 			Type:  "HTTP",
-			HTTPS: "支持",
+			HTTPS: "Supported",
 		},
 	}
 
@@ -152,7 +152,7 @@ func TestOptionsNormalizedAppliesDefaults(t *testing.T) {
 func TestLoadSiteConfigsFromFile(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "sources.json")
-	content := `[{"name":"custom","url":"https://example.com/{page}","pages":2,"kind":"api_text","default_type":"HTTP","default_https":"支持"}]`
+	content := `[{"name":"custom","url":"https://example.com/{page}","pages":2,"kind":"api_text","default_type":"HTTP","default_https":"Supported"}]`
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write config: %v", err)
 	}
@@ -264,7 +264,7 @@ func TestCollectUniqueProxiesFetchesPagesConcurrently(t *testing.T) {
 		Pages:      3,
 		Kind:       siteKindAPIText,
 		DefaultTyp: "HTTP",
-		DefaultSSL: "待检测",
+		DefaultSSL: "Unchecked",
 	}})
 	if err != nil {
 		t.Fatalf("collectUniqueProxies returned error: %v", err)
@@ -291,8 +291,8 @@ func TestCollectUniqueProxiesContinuesWhenOneSourceTimesOut(t *testing.T) {
 
 	s := newService(nil, io.Discard, mustNormalizeOptions(t, Options{RequestTimeout: 20 * time.Millisecond, FetchRetryCount: 1}))
 	proxies, _, err := s.collectUniqueProxies(context.Background(), []siteConfig{
-		{Name: "fast_source", URL: successServer.URL, Pages: 1, Kind: siteKindAPIText, DefaultTyp: "HTTP", DefaultSSL: "待检测"},
-		{Name: "slow_source", URL: slowServer.URL, Pages: 1, Kind: siteKindAPIText, DefaultTyp: "HTTP", DefaultSSL: "待检测"},
+		{Name: "fast_source", URL: successServer.URL, Pages: 1, Kind: siteKindAPIText, DefaultTyp: "HTTP", DefaultSSL: "Unchecked"},
+		{Name: "slow_source", URL: slowServer.URL, Pages: 1, Kind: siteKindAPIText, DefaultTyp: "HTTP", DefaultSSL: "Unchecked"},
 	})
 	if err != nil {
 		t.Fatalf("collectUniqueProxies returned error: %v", err)
@@ -316,7 +316,7 @@ func TestCollectUniqueProxiesReturnsContextErrorWhenCanceled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, _, err := s.collectUniqueProxies(ctx, []siteConfig{{Name: "test_source", URL: server.URL, Pages: 1, Kind: siteKindAPIText, DefaultTyp: "HTTP", DefaultSSL: "待检测"}})
+	_, _, err := s.collectUniqueProxies(ctx, []siteConfig{{Name: "test_source", URL: server.URL, Pages: 1, Kind: siteKindAPIText, DefaultTyp: "HTTP", DefaultSSL: "Unchecked"}})
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("expected context cancellation error, got %v", err)
 	}

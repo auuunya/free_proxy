@@ -37,21 +37,21 @@ func saveProxies(proxies []ProxyRecord, formatType, filename string, onlyIP bool
 				builder.WriteString("\n")
 			}
 		} else {
-			builder.WriteString("地区 | 类型 | HTTPS | 代理地址\n")
+			builder.WriteString("Region | Type | HTTPS | Proxy Address\n")
 			builder.WriteString(strings.Repeat("-", 60))
 			builder.WriteString("\n")
 			for _, proxyItem := range ordered {
 				region := proxyItem.Region
 				if region == "" {
-					region = "未知"
+					region = "Unknown"
 				}
 				proxyType := proxyItem.Type
 				if proxyType == "" {
-					proxyType = "未知"
+					proxyType = "Unknown"
 				}
 				httpsSupport := proxyItem.HTTPS
 				if httpsSupport == "" {
-					httpsSupport = "未知"
+					httpsSupport = "Unknown"
 				}
 				builder.WriteString(fmt.Sprintf("%s | %s | %s | %s\n", region, proxyType, httpsSupport, proxyItem.Address()))
 			}

@@ -39,8 +39,8 @@ var defaultSiteConfigs = []siteConfig{
 		URL:        "https://proxy.scdn.io/text.php",
 		Pages:      1,
 		Kind:       siteKindAPIText,
-		DefaultTyp: "待检测",
-		DefaultSSL: "待检测",
+		DefaultTyp: "Unchecked",
+		DefaultSSL: "Unchecked",
 	},
 	{
 		Name:      "freeproxylist",
@@ -75,7 +75,7 @@ var defaultSiteConfigs = []siteConfig{
 		Pages:      1,
 		Kind:       siteKindAPIText,
 		DefaultTyp: "HTTP",
-		DefaultSSL: "待检测",
+		DefaultSSL: "Unchecked",
 	},
 	{
 		Name:      "sslproxies",

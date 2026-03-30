@@ -12,7 +12,7 @@ import (
 
 func (s *service) promptProxyCount(proxies []ProxyRecord) ([]ProxyRecord, error) {
 	for {
-		line, err := s.prompt(fmt.Sprintf("请输入你需要的代理数量 (可用: %d, 直接回车代表全部): ", len(proxies)))
+		line, err := s.prompt(fmt.Sprintf("Enter the number of proxies to use (available: %d, press Enter for all): ", len(proxies)))
 		if err != nil {
 			return nil, err
 		}
@@ -22,7 +22,7 @@ func (s *service) promptProxyCount(proxies []ProxyRecord) ([]ProxyRecord, error)
 
 		count, err := strconv.Atoi(line)
 		if err != nil {
-			s.printf("输入无效，请输入一个有效的整数或直接回车。\n")
+			s.printf("Invalid input. Enter a valid integer or press Enter for all.\n")
 			continue
 		}
 		selected, err := selectProxyCount(proxies, count)
@@ -48,7 +48,7 @@ func (s *service) promptChoice(message string, choices []string) (string, error)
 		if _, ok := valid[line]; ok {
 			return line, nil
 		}
-		s.printf("输入无效，请输入 %s。\n", strings.Join(choices, " 或 "))
+		s.printf("Invalid input. Enter %s.\n", strings.Join(choices, " or "))
 	}
 }
 
@@ -66,7 +66,7 @@ func (s *service) promptBool(message string, defaultYes bool) (bool, error) {
 		case "n", "no":
 			return false, nil
 		default:
-			s.printf("输入无效，请输入 y 或 n。\n")
+			s.printf("Invalid input. Enter y or n.\n")
 		}
 	}
 }

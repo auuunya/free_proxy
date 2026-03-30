@@ -73,7 +73,7 @@ func Run(ctx context.Context, out io.Writer, options Options) error {
 	}
 	if len(proxies) == 0 {
 		s.printSourceStats(stats)
-		s.printf("未能获取到任何代理，程序即将退出。\n")
+		s.printf("No proxies were collected. Exiting.\n")
 		return nil
 	}
 
@@ -100,7 +100,7 @@ func RunInteractive(ctx context.Context, in io.Reader, out io.Writer) error {
 	}
 	if len(proxies) == 0 {
 		s.printSourceStats(stats)
-		s.printf("未能获取到任何代理，程序即将退出。\n")
+		s.printf("No proxies were collected. Exiting.\n")
 		return nil
 	}
 
@@ -109,27 +109,27 @@ func RunInteractive(ctx context.Context, in io.Reader, out io.Writer) error {
 		return err
 	}
 
-	unfilteredFormat, err := s.promptChoice("请选择未过滤代理 IP 的输出格式 (json/txt): ", []string{"json", "txt"})
+	unfilteredFormat, err := s.promptChoice("Select the output format for unfiltered proxies (json/txt): ", []string{"json", "txt"})
 	if err != nil {
 		return err
 	}
-	checkRegion, err := s.promptBool("是否需要检测代理 IP 的地区信息？(y/n, 默认n): ", false)
+	checkRegion, err := s.promptBool("Look up region metadata for validated proxies? (y/n, default n): ", false)
 	if err != nil {
 		return err
 	}
-	checkTypeHTTPS, err := s.promptBool("是否需要检测代理类型和HTTPS支持？(y/n, 默认y): ", true)
+	checkTypeHTTPS, err := s.promptBool("Detect proxy type and HTTPS support? (y/n, default y): ", true)
 	if err != nil {
 		return err
 	}
 
-	validFormat, err := s.promptChoice("请选择有效代理 IP 的输出格式 (json/txt): ", []string{"json", "txt"})
+	validFormat, err := s.promptChoice("Select the output format for valid proxies (json/txt): ", []string{"json", "txt"})
 	if err != nil {
 		return err
 	}
 
 	onlyIP := false
 	if validFormat == "txt" {
-		onlyIP, err = s.promptBool("是否仅输出代理 IP (ip:port)，每行一个？(y/n, 默认n): ", false)
+		onlyIP, err = s.promptBool("Write only proxy addresses (ip:port), one per line? (y/n, default n): ", false)
 		if err != nil {
 			return err
 		}
@@ -175,12 +175,12 @@ func newService(in io.Reader, out io.Writer, options Options) *service {
 
 func (s *service) printBanner() {
 	s.printf("%s\n", strings.Repeat("=", 50))
-	s.printf("多源代理 IP 爬虫 v3.0 (Go 协程版)\n")
+	s.printf("Multi-source Proxy Collector v3.0 (Go concurrency edition)\n")
 	s.printf("%s\n", strings.Repeat("=", 50))
 }
 
 func (s *service) collectUniqueProxies(ctx context.Context, sources []siteConfig) ([]ProxyRecord, []siteStats, error) {
-	s.printf("\n正在并发爬取代理源...\n")
+	s.printf("\nCollecting proxies from sources concurrently...\n")
 
 	results := make(chan siteFetchResult, len(sources))
 	var wg sync.WaitGroup
@@ -219,14 +219,14 @@ func (s *service) collectUniqueProxies(ctx context.Context, sources []siteConfig
 		}
 		stats = append(stats, result.stats)
 		if result.err != nil {
-			s.printf("站点 %s 爬取时发生异常: %v\n", result.name, result.err)
+			s.printf("Source %s failed during collection: %v\n", result.name, result.err)
 			continue
 		}
 		if len(result.proxies) == 0 {
-			s.printf("站点 %s 未返回任何代理。\n", result.name)
+			s.printf("Source %s returned no proxies.\n", result.name)
 			continue
 		}
-		s.printf("从 %s 获取到 %d 个原始代理\n", result.name, len(result.proxies))
+		s.printf("Collected %d raw proxies from %s\n", len(result.proxies), result.name)
 		allProxies = append(allProxies, result.proxies...)
 	}
 
@@ -234,32 +234,32 @@ func (s *service) collectUniqueProxies(ctx context.Context, sources []siteConfig
 		return nil, nil, err
 	}
 	uniqueProxies := sortProxyRecords(dedupeProxies(allProxies))
-	s.printf("\n共获取到 %d 个唯一代理\n", len(uniqueProxies))
+	s.printf("\nCollected %d unique proxies in total\n", len(uniqueProxies))
 	return uniqueProxies, stats, nil
 }
 
 func (s *service) execute(ctx context.Context, selected []ProxyRecord, options Options, stats []siteStats) error {
 	selected = sortProxyRecords(selected)
-	s.printf("已选择 %d 个代理进行后续处理。\n", len(selected))
+	s.printf("Selected %d proxies for processing.\n", len(selected))
 
 	currentTime := time.Now().Format("20060102150405")
 	unfilteredFilename := filepath.Join(options.OutputDir, fmt.Sprintf("unfiltered_proxies_%s.%s", currentTime, options.UnfilteredFormat))
 	if err := saveProxies(selected, options.UnfilteredFormat, unfilteredFilename, false); err != nil {
 		return err
 	}
-	s.printf("代理已保存到 %s\n", unfilteredFilename)
+	s.printf("Saved proxies to %s\n", unfilteredFilename)
 
-	s.printf("\n正在使用 goroutine 并发验证代理可用性...\n")
+	s.printf("\nValidating proxies concurrently with goroutines...\n")
 	validProxies := s.validateProxies(ctx, selected, options.CheckTypeHTTPS, options.TargetValidCount, stats)
-	s.printf("验证完成，共有 %d 个代理可用。\n", len(validProxies))
+	s.printf("Validation complete. %d proxies are usable.\n", len(validProxies))
 	s.printSourceStats(stats)
 	if len(validProxies) == 0 {
-		s.printf("没有找到可用的代理，程序结束。\n")
+		s.printf("No usable proxies were found. Exiting.\n")
 		return nil
 	}
 
 	if options.CheckRegion {
-		s.printf("\n正在为有效代理添加地区信息...\n")
+		s.printf("\nLooking up region metadata for valid proxies...\n")
 		s.addRegions(ctx, validProxies)
 	}
 
@@ -268,13 +268,13 @@ func (s *service) execute(ctx context.Context, selected []ProxyRecord, options O
 		validProxies = validProxies[:options.TargetValidCount]
 	}
 
-	s.printf("\n处理完成，找到 %d 个有效代理。\n", len(validProxies))
+	s.printf("\nFinished. Found %d valid proxies.\n", len(validProxies))
 	validFilename := filepath.Join(options.OutputDir, fmt.Sprintf("valid_proxies_%s.%s", currentTime, options.ValidFormat))
 	if err := saveProxies(validProxies, options.ValidFormat, validFilename, options.OnlyIP); err != nil {
 		return err
 	}
-	s.printf("代理已保存到 %s\n", validFilename)
-	s.printf("\n代理爬取和验证任务完成。\n")
+	s.printf("Saved proxies to %s\n", validFilename)
+	s.printf("\nProxy collection and validation completed.\n")
 	return nil
 }
 
@@ -310,20 +310,20 @@ func (s *service) getProxiesFromSite(ctx context.Context, cfg siteConfig) ([]Pro
 		stats.fetchRetries += result.retryCount
 		if result.err != nil {
 			stats.failedPages++
-			s.printf("%s 第 %d 页爬取失败: %v\n", cfg.Name, result.page, result.err)
+			s.printf("%s page %d failed: %v\n", cfg.Name, result.page, result.err)
 			continue
 		}
 		stats.fetchedPages++
 		stats.fetchedProxies += len(result.proxies)
 		all = append(all, result.proxies...)
-		s.printf("从 %s 第 %d 页获取到 %d 个代理。\n", cfg.Name, result.page, len(result.proxies))
+		s.printf("Collected %d proxies from %s page %d.\n", len(result.proxies), cfg.Name, result.page)
 	}
 	return all, stats, nil
 }
 
 func (s *service) fetchSitePage(ctx context.Context, cfg siteConfig, page int) pageFetchResult {
 	pageURL := strings.ReplaceAll(cfg.URL, "{page}", strconv.Itoa(page))
-	s.printf("正在爬取 %s 第 %d 页: %s\n", cfg.Name, page, pageURL)
+	s.printf("Fetching %s page %d: %s\n", cfg.Name, page, pageURL)
 
 	body, retries, err := s.fetchWithRetry(ctx, pageURL)
 	if err != nil {
@@ -337,12 +337,12 @@ func (s *service) fetchSitePage(ctx context.Context, cfg siteConfig, page int) p
 	case siteKindAPIJSON:
 		proxies, err = parseGeonode(body)
 		if err != nil {
-			return pageFetchResult{page: page, retryCount: retries, err: fmt.Errorf("返回的 JSON 数据格式有误: %w", err)}
+			return pageFetchResult{page: page, retryCount: retries, err: fmt.Errorf("invalid JSON response format: %w", err)}
 		}
 	case siteKindWeb:
 		proxies, err = parseWebProxyPage(string(body), cfg.WebParser)
 		if err != nil {
-			return pageFetchResult{page: page, retryCount: retries, err: fmt.Errorf("页面解析失败: %w", err)}
+			return pageFetchResult{page: page, retryCount: retries, err: fmt.Errorf("page parsing failed: %w", err)}
 		}
 	}
 
@@ -357,13 +357,13 @@ func (s *service) printSourceStats(stats []siteStats) {
 	if len(stats) == 0 {
 		return
 	}
-	s.printf("\n源站汇总:\n")
+	s.printf("\nSource summary:\n")
 	for _, stat := range stats {
 		successRate := 0.0
 		if stat.pages > 0 {
 			successRate = float64(stat.fetchedPages) / float64(stat.pages) * 100
 		}
-		s.printf("- %s: 抓取=%d, 重试=%d, 页面成功率=%.0f%%, 验证通过=%d\n", stat.name, stat.fetchedProxies, stat.fetchRetries, successRate, stat.validatedSuccess)
+		s.printf("- %s: fetched=%d, retries=%d, page success rate=%.0f%%, validated=%d\n", stat.name, stat.fetchedProxies, stat.fetchRetries, successRate, stat.validatedSuccess)
 	}
 }
 

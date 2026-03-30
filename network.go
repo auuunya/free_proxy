@@ -66,7 +66,7 @@ func (s *service) fetch(ctx context.Context, rawURL string) ([]byte, error) {
 	}
 	req.Header.Set("User-Agent", randomUserAgent())
 	req.Header.Set("Accept", "*/*")
-	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 
 	resp, err := s.client.Do(req)
 	if err != nil {
@@ -107,7 +107,7 @@ func (s *service) fetchWithRetry(ctx context.Context, rawURL string) ([]byte, in
 		}
 
 		wait := delay * time.Duration(1<<(attempt-1))
-		s.printf("抓取 %s 失败，准备重试 (%d/%d): %v\n", rawURL, attempt, attempts, err)
+		s.printf("Fetch %s failed, retrying (%d/%d): %v\n", rawURL, attempt, attempts, err)
 		if err := sleepContext(ctx, wait); err != nil {
 			return nil, attempt - 1, err
 		}
@@ -182,8 +182,8 @@ func (s *service) validateProxies(ctx context.Context, proxies []ProxyRecord, ch
 func (s *service) validateProxy(ctx context.Context, proxyItem ProxyRecord, checkTypeHTTPS bool) (ProxyRecord, bool) {
 	address := proxyItem.Address()
 	initialType := strings.ToLower(strings.TrimSpace(proxyItem.Type))
-	detectedType := "未知"
-	httpsSupport := "不支持"
+	detectedType := "Unknown"
+	httpsSupport := "Unsupported"
 
 	order := []string{"http"}
 	switch initialType {
@@ -205,7 +205,7 @@ func (s *service) validateProxy(ctx context.Context, proxyItem ProxyRecord, chec
 			if s.testHTTPProxy(ctx, address, httpProbeURL) {
 				detectedType = "HTTP"
 				if checkTypeHTTPS && s.testHTTPProxy(ctx, address, httpsProbeURL) {
-					httpsSupport = "支持"
+					httpsSupport = "Supported"
 					if initialType == "https" {
 						detectedType = "HTTPS"
 					}
@@ -213,37 +213,37 @@ func (s *service) validateProxy(ctx context.Context, proxyItem ProxyRecord, chec
 				proxyItem.ValidatedOK = true
 				proxyItem.Type = detectedType
 				proxyItem.HTTPS = httpsSupport
-				s.printf("代理 %s (%s) 验证通过，HTTPS: %s\n", address, detectedType, httpsSupport)
+				s.printf("Proxy %s (%s) validation succeeded, HTTPS: %s\n", address, detectedType, httpsSupport)
 				return proxyItem, true
 			}
 		case "https":
 			if checkTypeHTTPS && s.testHTTPProxy(ctx, address, httpsProbeURL) {
 				proxyItem.ValidatedOK = true
 				proxyItem.Type = "HTTPS"
-				proxyItem.HTTPS = "支持"
-				s.printf("代理 %s (HTTPS) 验证通过\n", address)
+				proxyItem.HTTPS = "Supported"
+				s.printf("Proxy %s (HTTPS) validation succeeded\n", address)
 				return proxyItem, true
 			}
 		case "socks5":
 			if s.testSOCKS5Proxy(ctx, address, false) {
 				detectedType = "SOCKS5"
 				if checkTypeHTTPS && s.testSOCKS5Proxy(ctx, address, true) {
-					httpsSupport = "支持"
+					httpsSupport = "Supported"
 				}
 				proxyItem.ValidatedOK = true
 				proxyItem.Type = detectedType
 				proxyItem.HTTPS = httpsSupport
-				s.printf("代理 %s (SOCKS5) 验证通过，HTTPS: %s\n", address, httpsSupport)
+				s.printf("Proxy %s (SOCKS5) validation succeeded, HTTPS: %s\n", address, httpsSupport)
 				return proxyItem, true
 			}
 			if initialType == "socks5" {
-				s.printf("代理 %s (SOCKS5) 验证失败\n", address)
+				s.printf("Proxy %s (SOCKS5) validation failed\n", address)
 				return ProxyRecord{}, false
 			}
 		}
 	}
 
-	s.printf("代理 %s 验证失败\n", address)
+	s.printf("Proxy %s validation failed\n", address)
 	return ProxyRecord{}, false
 }
 
@@ -438,12 +438,12 @@ func (s *service) addRegions(ctx context.Context, proxies []ProxyRecord) {
 			region, err := s.detectRegion(ctx, proxies[index].IP)
 			address := proxies[index].Address()
 			if err != nil {
-				s.printf("检测代理 %s 地区信息时发生异常: %v\n", address, err)
-				proxies[index].Region = "未知"
+				s.printf("Region lookup failed for proxy %s: %v\n", address, err)
+				proxies[index].Region = "Unknown"
 				return
 			}
 			proxies[index].Region = region
-			s.printf("代理 %s 地区检测结果: %s\n", address, region)
+			s.printf("Proxy %s region lookup result: %s\n", address, region)
 		}()
 	}
 	wg.Wait()
@@ -482,13 +482,13 @@ func (s *service) detectRegion(ctx context.Context, ip string) (string, error) {
 				} else {
 					ipRegion := payload.Data.RGeo
 					if ipRegion.Country == "" {
-						ipRegion.Country = "未知"
+						ipRegion.Country = "Unknown"
 					}
 					if ipRegion.Province == "" {
-						ipRegion.Province = "未知"
+						ipRegion.Province = "Unknown"
 					}
 					if ipRegion.City == "" {
-						ipRegion.City = "未知"
+						ipRegion.City = "Unknown"
 					}
 					region := ipRegion.Country + "/" + ipRegion.Province + "/" + ipRegion.City
 					resp.Body.Close()
@@ -498,7 +498,7 @@ func (s *service) detectRegion(ctx context.Context, ip string) (string, error) {
 			resp.Body.Close()
 		}
 
-		s.printf("检测 IP %s 地区信息失败 (尝试 %d/3): %v\n", ip, attempt, lastErr)
+		s.printf("Region lookup failed for IP %s (attempt %d/3): %v\n", ip, attempt, lastErr)
 		if attempt < 3 {
 			if err := sleepContext(ctx, time.Second); err != nil {
 				return "", err
@@ -509,5 +509,5 @@ func (s *service) detectRegion(ctx context.Context, ip string) (string, error) {
 	if lastErr == nil {
 		lastErr = errors.New("unknown region response")
 	}
-	return "未知", lastErr
+	return "Unknown", lastErr
 }

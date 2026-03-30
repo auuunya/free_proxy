@@ -1,5 +1,7 @@
 # free_proxy
 
+English documentation. For the Chinese version, see [README.zh.md](README.zh.md).
+
 `free_proxy` is a small Go library and CLI for collecting public proxy lists, validating them concurrently, and exporting usable results as JSON or TXT files.
 
 ## Features
@@ -45,6 +47,26 @@ If one upstream source times out or returns an error, the CLI logs that source f
 
 `--count` limits how many collected proxies move into validation. `--valid-count` stops validation once enough working proxies are found, then writes a deterministic, sorted result set.
 
+## CLI Flags
+
+| Flag                     | Default | Description                                                                                        |
+| ------------------------ | ------- | -------------------------------------------------------------------------------------------------- |
+| `--interactive`          | `false` | Run the interactive workflow. Interactive mode also starts automatically when no flags are passed. |
+| `--count`                | `0`     | Limit how many collected proxies move into validation; `0` uses all collected proxies.             |
+| `--valid-count`          | `0`     | Stop validation after finding this many usable proxies; `0` validates all candidates.              |
+| `--unfiltered-format`    | `json`  | Output format for the unfiltered proxy list: `json` or `txt`.                                      |
+| `--valid-format`         | `json`  | Output format for the validated proxy list: `json` or `txt`.                                       |
+| `--output-dir`           | `.`     | Directory where output files are written.                                                          |
+| `--check-region`         | `false` | Look up region metadata for validated proxies.                                                     |
+| `--check-type-https`     | `true`  | Detect proxy protocol and HTTPS support during validation.                                         |
+| `--only-ip`              | `false` | When `--valid-format=txt`, write only `ip:port` entries, one per line.                             |
+| `--timeout`              | `20s`   | Request timeout for source fetches and region lookups.                                             |
+| `--fetch-concurrency`    | `8`     | Maximum number of source fetch requests running at the same time.                                  |
+| `--validate-concurrency` | `100`   | Maximum number of proxy validation checks running at the same time.                                |
+| `--fetch-retries`        | `3`     | Maximum number of attempts for each source page fetch.                                             |
+| `--fetch-retry-delay`    | `500ms` | Base backoff delay between fetch retries.                                                          |
+| `--source-config`        | `""`    | Path to a JSON file that overrides the built-in source list.                                       |
+
 ## Source Config File
 
 You can override the built-in source list with `--source-config <path>`. The file must contain a JSON array of source objects:
@@ -57,7 +79,7 @@ You can override the built-in source list with `--source-config <path>`. The fil
     "pages": 2,
     "kind": "api_text",
     "default_type": "HTTP",
-    "default_https": "待检测"
+    "default_https": "Unchecked"
   }
 ]
 ```
@@ -75,24 +97,10 @@ Supported `kind` values are `api_text`, `api_json`, and `web`. For `web` sources
 
 ## Development
 
-Recommended Go version: `1.21.13`
+Recommended Go version: `1.25.0`
 
 ```bash
 go test ./...
 ```
 
 If every source fails or no unique proxies are collected, the program exits without producing proxy output files.
-
-If you use a version manager:
-
-- `mise` / `asdf`: this repo now includes `.tool-versions`
-- `goenv` / `gvm`: this repo now includes `.go-version`
-- Go 1.21+ native toolchain selection: `go.mod` now suggests `toolchain go1.21.13`
-
-## Suggestions Before Publishing
-
-- Replace the `module free_proxy` path in `go.mod` with the final Git hosting path.
-- Add a `LICENSE` file after deciding the repository's legal terms.
-- Add CI for `go test ./...`, `gofmt`, and `go vet`.
-- Introduce interfaces around remote sources and validators if you want stable offline tests.
-- Consider making source lists and concurrency limits configurable through a config file.

@@ -55,14 +55,14 @@ func parseGeonode(body []byte) ([]ProxyRecord, error) {
 
 	proxies := make([]ProxyRecord, 0, len(payload.Data))
 	for _, item := range payload.Data {
-		proxyType := "待检测"
-		httpsSupport := "不支持"
+		proxyType := "Unchecked"
+		httpsSupport := "Unsupported"
 		if len(item.Protocols) > 0 {
 			proxyType = strings.ToUpper(item.Protocols[0])
 		}
 		for _, protocol := range item.Protocols {
 			if strings.EqualFold(protocol, "https") {
-				httpsSupport = "支持"
+				httpsSupport = "Supported"
 				break
 			}
 		}
@@ -104,9 +104,9 @@ func parseFreeProxyList(body string) []ProxyRecord {
 			proxyType = "SOCKS5"
 		}
 
-		httpsSupport := "不支持"
+		httpsSupport := "Unsupported"
 		if strings.Contains(strings.ToLower(row[6]), "yes") {
-			httpsSupport = "支持"
+			httpsSupport = "Supported"
 		}
 
 		proxies = append(proxies, ProxyRecord{
@@ -127,9 +127,9 @@ func parseProxyListPlus(body string) []ProxyRecord {
 			continue
 		}
 
-		httpsSupport := "不支持"
+		httpsSupport := "Unsupported"
 		if strings.Contains(strings.ToLower(row[5]), "yes") {
-			httpsSupport = "支持"
+			httpsSupport = "Supported"
 		}
 
 		proxies = append(proxies, ProxyRecord{
@@ -153,7 +153,7 @@ func parse89IP(body string) []ProxyRecord {
 			IP:    row[0],
 			Port:  row[1],
 			Type:  "HTTP",
-			HTTPS: "待检测",
+			HTTPS: "Unchecked",
 		})
 	}
 	return proxies
@@ -170,7 +170,7 @@ func parseSSLProxies(body string) []ProxyRecord {
 			IP:    row[0],
 			Port:  row[1],
 			Type:  "HTTPS",
-			HTTPS: "支持",
+			HTTPS: "Supported",
 		})
 	}
 	return proxies
@@ -249,10 +249,10 @@ func sanitizeProxies(proxies []ProxyRecord) []ProxyRecord {
 			continue
 		}
 		if proxyItem.Type == "" {
-			proxyItem.Type = "待检测"
+			proxyItem.Type = "Unchecked"
 		}
 		if proxyItem.HTTPS == "" {
-			proxyItem.HTTPS = "待检测"
+			proxyItem.HTTPS = "Unchecked"
 		}
 		valid = append(valid, proxyItem)
 	}
