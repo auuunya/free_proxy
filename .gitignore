@@ -1,0 +1,13 @@
+.DS_Store
+.claude/
+mise.toml
+._*
+*.un~
+bin/
+dist/
+free-proxy
+*.out
+unfiltered_proxies_*.json
+unfiltered_proxies_*.txt
+valid_proxies_*.json
+valid_proxies_*.txt
